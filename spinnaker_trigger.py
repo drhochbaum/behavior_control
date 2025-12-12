@@ -23,6 +23,7 @@ TIMEOUT_MS = 20000  # GetNextImage timeout in milliseconds
 PIXEL_FORMAT = PySpin.PixelFormat_Mono8  # requested pixel format
 VIDEO_FRAME_RATE = 30.0  # frame rate metadata for SpinVideo
 VIDEO_QUALITY = 100  # SpinVideo quality (1-100)
+BINNING_FACTOR = 1  # 1 = full resolution, 2 = 2x2 binning, etc.
 
 
 def configure_hardware_trigger(cam: PySpin.CameraPtr) -> None:
@@ -54,6 +55,41 @@ def configure_exposure(cam: PySpin.CameraPtr, exposure_us: float, max_exposure_u
     node.SetValue(clamped)  # apply exposure
 
 
+def configure_binning(cam: PySpin.CameraPtr, binning_factor: int) -> None:
+    """
+    Set horizontal and vertical binning to the specified factor.
+    Note: Some cameras require BinningSelector to be set (e.g. 'All' or 'Sensor') first.
+    """
+    if binning_factor <= 1:
+        return
+
+    # Try setting BinningSelector to 'All' or 'Sensor' if available
+    # This ensures we are binning the sensor data
+    if hasattr(cam, "BinningSelector") and cam.BinningSelector.GetAccessMode() == PySpin.RW:
+        # Try 'All', 'Sensor'
+        # Note: These enums might vary by camera model. Using string or skipping if specific ones not found.
+        # Often default is fine, but being explicit is better if possible.
+        pass
+
+    # Set Horizontal Binning
+    if hasattr(cam, "BinningHorizontal") and cam.BinningHorizontal.GetAccessMode() == PySpin.RW:
+        node = cam.BinningHorizontal
+        target = binning_factor
+        clamped = min(max(node.GetMin(), target), node.GetMax())
+        node.SetValue(clamped)
+    else:
+        print(f"Warning: BinningHorizontal not writable or unavailable.")
+
+    # Set Vertical Binning
+    if hasattr(cam, "BinningVertical") and cam.BinningVertical.GetAccessMode() == PySpin.RW:
+        node = cam.BinningVertical
+        target = binning_factor
+        clamped = min(max(node.GetMin(), target), node.GetMax())
+        node.SetValue(clamped)
+    else:
+        print(f"Warning: BinningVertical not writable or unavailable.")
+
+
 def acquire_triggered_frames(
     num_frames: int = NUM_FRAMES,
     video_path: pathlib.Path = VIDEO_PATH,
@@ -62,6 +98,7 @@ def acquire_triggered_frames(
     exposure_us: float = EXPOSURE_TIME_US,
     video_frame_rate: float = VIDEO_FRAME_RATE,
     video_quality: int = VIDEO_QUALITY,
+    binning_factor: int = BINNING_FACTOR,
     use_trigger: bool = True,
 ):
     print(f"Spinnaker capturing {num_frames} frames")
@@ -85,6 +122,9 @@ def acquire_triggered_frames(
             configure_hardware_trigger(cam)
         else:
             configure_freerun(cam)
+
+        configure_binning(cam, binning_factor)
+
         frame_period_us = 1e6 / video_frame_rate if video_frame_rate > 0 else None
         max_exp = frame_period_us if frame_period_us is not None else None
         configure_exposure(cam, exposure_us, max_exp)
