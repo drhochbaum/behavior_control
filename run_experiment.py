@@ -19,6 +19,7 @@ TIME_IN_SECONDS = 180  # total experiment duration in seconds
 TRIGGER_RATE_HZ = 30.0
 NUM_FRAMES = int(TIME_IN_SECONDS * TRIGGER_RATE_HZ)
 EXPOSURE_TIME_US = 10000.0
+BINNING_FACTOR = 2
 CAMERA_VIDEO_PATH = Path("captures/session01.avi")      #VIDEO_PATH
 LABJACK_LOG_PATH = Path("captures/labjack_stream.csv")  #DATA_LOG_PATH
 
@@ -34,6 +35,7 @@ def main():
             "timeout_ms": timeout_ms,
             "exposure_us": EXPOSURE_TIME_US,
             "video_frame_rate": TRIGGER_RATE_HZ,
+            "binning_factor": BINNING_FACTOR,
         },
         daemon=False,
     )
