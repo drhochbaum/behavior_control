@@ -56,4 +56,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print(f"DEBUG: Running file: {__file__}")
+    print(f"DEBUG: TIME_IN_SECONDS={TIME_IN_SECONDS}")
+    print(f"DEBUG: CAMERA_VIDEO_PATH={CAMERA_VIDEO_PATH}")
     main()
